@@ -1,6 +1,11 @@
-import exampleIconUrl from "./noun-paperclip-7598668-00449F.png";
 import "./style.css";
+document.title = "Sketching";
 
 document.body.innerHTML = `
-  <p>Example image asset: <img src="${exampleIconUrl}" class="icon" /></p>
+  <h1>Welcome to Sketching</h1>
 `;
+
+const drawingBoard = document.createElement("canvas");
+drawingBoard.width = 256;
+drawingBoard.height = 256;
+document.body.append(drawingBoard);
