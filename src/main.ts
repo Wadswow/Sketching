@@ -14,7 +14,8 @@ document.body.append(drawingBoard);
 const drawing = drawingBoard.getContext("2d")!;
 const pen = { active: false, x: 0, y: 0 };
 const strokes: Array<Array<{ x: number; y: number }>> = [];
-let currentStroke: Array<{ x: number; y: number }> | null = null;
+const redoStrokes: Array<Array<{ x: number; y: number }>> = [];
+let currentStroke: Array<{ x: number; y: number }> = [];
 
 //drawing logic
 drawingBoard.addEventListener("change", (_e) => {
@@ -32,12 +33,13 @@ drawingBoard.addEventListener("change", (_e) => {
   }
 });
 
+//drawing mouse events
 drawingBoard.addEventListener("mousedown", (e) => {
   pen.active = true;
   pen.x = e.offsetX;
   pen.y = e.offsetY;
-  currentStroke = [];
   strokes.push(currentStroke);
+  redoStrokes.splice(0, redoStrokes.length);
   currentStroke.push({ x: pen.x, y: pen.y });
   drawingBoard.dispatchEvent(new Event("change"));
 });
@@ -51,7 +53,7 @@ drawingBoard.addEventListener("mousemove", (e) => {
 });
 drawingBoard.addEventListener("mouseup", (_e) => {
   pen.active = false;
-  currentStroke = null;
+  currentStroke = [];
   drawingBoard.dispatchEvent(new Event("change"));
 });
 
@@ -65,4 +67,37 @@ document.body.append(clearButton);
 clearButton.addEventListener("click", () => {
   drawing.clearRect(0, 0, drawingBoard.width, drawingBoard.height);
   strokes.splice(0, strokes.length);
+});
+
+//Undo/redo button elements
+const undoButton = document.createElement("button");
+undoButton.innerHTML = "undo";
+document.body.append(undoButton);
+const redoButton = document.createElement("button");
+redoButton.innerHTML = "redo";
+document.body.append(redoButton);
+
+//undo function
+function undo() {
+  if (strokes.length > 0) {
+    redoStrokes.push(strokes.pop()!);
+    drawingBoard.dispatchEvent(new Event("change"));
+  }
+}
+
+//redo function
+function redo() {
+  if (redoStrokes.length > 0) {
+    strokes.push(redoStrokes.pop()!);
+    drawingBoard.dispatchEvent(new Event("change"));
+  }
+}
+
+//redo/undo button functionality
+undoButton.addEventListener("click", () => {
+  undo();
+});
+
+redoButton.addEventListener("click", () => {
+  redo();
 });
