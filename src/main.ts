@@ -11,50 +11,74 @@ const drawingBoard = document.createElement("canvas");
 drawingBoard.width = 256;
 drawingBoard.height = 256;
 document.body.append(drawingBoard);
+const rect = drawingBoard.getBoundingClientRect();
 const drawing = drawingBoard.getContext("2d")!;
-const pen = { active: false, x: 0, y: 0 };
-const strokes: Array<Array<{ x: number; y: number }>> = [];
-const redoStrokes: Array<Array<{ x: number; y: number }>> = [];
-let currentStroke: Array<{ x: number; y: number }> = [];
+const strokes: command[] = [];
+const redoStrokes: command[] = [];
+let currentStroke: command | null = null;
 
-//drawing logic
-drawingBoard.addEventListener("change", (_e) => {
-  drawing.clearRect(0, 0, drawingBoard.width, drawingBoard.height);
-  for (const line of strokes) {
-    if (line.length > 1) {
-      drawing.beginPath();
-      const { x, y } = line[0];
-      drawing.moveTo(x, y);
-      for (const { x, y } of line) {
-        drawing.lineTo(x, y);
+//interfaces for drawing
+interface pen {
+  x: number;
+  y: number;
+}
+
+interface command {
+  display(ctx: CanvasRenderingContext2D): void;
+  drag(x: number, y: number): void;
+}
+
+//commands for drawings
+function drawCommand(firstX: number, firstY: number): command {
+  const points: pen[] = [{ x: firstX, y: firstY }];
+
+  return {
+    display(ctx) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
       }
-      drawing.stroke();
-    }
+      ctx.stroke();
+    },
+    drag(x: number, y: number) {
+      points.push({ x, y });
+    },
+  };
+}
+
+//draw onto the screen for user
+function redraw() {
+  drawing.clearRect(0, 0, drawingBoard.width, drawingBoard.height);
+  for (const cmd of strokes) {
+    cmd.display(drawing);
   }
-});
+  if (currentStroke) {
+    currentStroke.display(drawing);
+  }
+}
 
 //drawing mouse events
 drawingBoard.addEventListener("mousedown", (e) => {
-  pen.active = true;
-  pen.x = e.offsetX;
-  pen.y = e.offsetY;
-  strokes.push(currentStroke);
-  redoStrokes.splice(0, redoStrokes.length);
-  currentStroke.push({ x: pen.x, y: pen.y });
-  drawingBoard.dispatchEvent(new Event("change"));
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  currentStroke = drawCommand(x, y);
+  redraw();
 });
+
 drawingBoard.addEventListener("mousemove", (e) => {
-  if (pen.active) {
-    pen.x = e.offsetX;
-    pen.y = e.offsetY;
-    currentStroke!.push({ x: pen.x, y: pen.y });
-    drawingBoard.dispatchEvent(new Event("change"));
-  }
+  if (!currentStroke) return;
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  currentStroke!.drag(x, y);
+  redraw();
 });
 drawingBoard.addEventListener("mouseup", (_e) => {
-  pen.active = false;
-  currentStroke = [];
-  drawingBoard.dispatchEvent(new Event("change"));
+  if (currentStroke) {
+    strokes.push(currentStroke);
+    currentStroke = null;
+    redraw();
+  }
 });
 
 //clear button elements
@@ -67,6 +91,7 @@ document.body.append(clearButton);
 clearButton.addEventListener("click", () => {
   drawing.clearRect(0, 0, drawingBoard.width, drawingBoard.height);
   strokes.splice(0, strokes.length);
+  redoStrokes.splice(0, redoStrokes.length);
 });
 
 //Undo/redo button elements
@@ -81,7 +106,7 @@ document.body.append(redoButton);
 function undo() {
   if (strokes.length > 0) {
     redoStrokes.push(strokes.pop()!);
-    drawingBoard.dispatchEvent(new Event("change"));
+    redraw();
   }
 }
 
@@ -89,7 +114,7 @@ function undo() {
 function redo() {
   if (redoStrokes.length > 0) {
     strokes.push(redoStrokes.pop()!);
-    drawingBoard.dispatchEvent(new Event("change"));
+    redraw();
   }
 }
 
