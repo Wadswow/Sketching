@@ -1,6 +1,5 @@
 import "./style.css";
 document.title = "Sketching";
-const newLine = document.createElement("br");
 
 document.body.innerHTML = `
   <h1>Welcome to Sketching</h1>
@@ -29,7 +28,11 @@ interface command {
 }
 
 //commands for drawings
-function drawCommand(firstX: number, firstY: number): command {
+function drawCommand(
+  firstX: number,
+  firstY: number,
+  thickness: number,
+): command {
   const points: pen[] = [{ x: firstX, y: firstY }];
 
   return {
@@ -39,6 +42,7 @@ function drawCommand(firstX: number, firstY: number): command {
       for (let i = 1; i < points.length; i++) {
         ctx.lineTo(points[i].x, points[i].y);
       }
+      ctx.lineWidth = thickness;
       ctx.stroke();
     },
     drag(x: number, y: number) {
@@ -62,7 +66,7 @@ function redraw() {
 drawingBoard.addEventListener("mousedown", (e) => {
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
-  currentStroke = drawCommand(x, y);
+  currentStroke = drawCommand(x, y, drawing.lineWidth);
   redraw();
 });
 
@@ -84,7 +88,7 @@ drawingBoard.addEventListener("mouseup", (_e) => {
 //clear button elements
 const clearButton = document.createElement("button");
 clearButton.innerHTML = "clear";
-document.body.append(newLine);
+document.body.append(document.createElement("br"));
 document.body.append(clearButton);
 
 //clear button logic
@@ -125,4 +129,30 @@ undoButton.addEventListener("click", () => {
 
 redoButton.addEventListener("click", () => {
   redo();
+});
+
+document.body.append(document.createElement("br"));
+
+//thickness buttons
+const thinButton = document.createElement("button");
+thinButton.innerHTML = "Thin";
+document.body.append(thinButton);
+const thickButton = document.createElement("button");
+thickButton.innerHTML = "Thick";
+document.body.append(thickButton);
+
+//thickness button functionality
+thinButton.addEventListener("click", () => {
+  drawing.lineWidth = 1;
+  thinButton.classList.add("selectedTool");
+  thinButton.disabled = true;
+  thickButton.classList.remove("selectedTool");
+  thickButton.disabled = false;
+});
+thickButton.addEventListener("click", () => {
+  drawing.lineWidth = 5;
+  thickButton.classList.add("selectedTool");
+  thickButton.disabled = true;
+  thinButton.classList.remove("selectedTool");
+  thinButton.disabled = false;
 });
