@@ -10,11 +10,14 @@ const drawingBoard = document.createElement("canvas");
 drawingBoard.width = 256;
 drawingBoard.height = 256;
 document.body.append(drawingBoard);
+drawingBoard.style.cursor = "none";
 const rect = drawingBoard.getBoundingClientRect();
 const drawing = drawingBoard.getContext("2d")!;
 const strokes: command[] = [];
 const redoStrokes: command[] = [];
 let currentStroke: command | null = null;
+let currentBrush: brush | null = null;
+let strokeThickness = 1;
 
 //interfaces for drawing
 interface pen {
@@ -25,6 +28,10 @@ interface pen {
 interface command {
   display(ctx: CanvasRenderingContext2D): void;
   drag(x: number, y: number): void;
+}
+
+interface brush {
+  draw(ctx: CanvasRenderingContext2D): void;
 }
 
 //commands for drawings
@@ -51,6 +58,17 @@ function drawCommand(
   };
 }
 
+function brushCommand(cursorX: number, cursorY: number) {
+  return {
+    draw(ctx: CanvasRenderingContext2D) {
+      ctx.beginPath();
+      ctx.lineWidth = strokeThickness;
+      ctx.arc(cursorX, cursorY, 1, 0, 2 * Math.PI);
+      ctx.stroke();
+    },
+  };
+}
+
 //draw onto the screen for user
 function redraw() {
   drawing.clearRect(0, 0, drawingBoard.width, drawingBoard.height);
@@ -60,28 +78,50 @@ function redraw() {
   if (currentStroke) {
     currentStroke.display(drawing);
   }
+  if (currentBrush) {
+    currentBrush.draw(drawing);
+  }
 }
 
+//event listener for commands
+const portrait = new EventTarget();
+portrait.addEventListener("draw", redraw);
+portrait.addEventListener("brush", redraw);
+
 //drawing mouse events
+drawingBoard.addEventListener("mouseout", (_e) => {
+  currentBrush = null;
+  portrait.dispatchEvent(new Event("brush"));
+});
+
+drawingBoard.addEventListener("mouseenter", (e) => {
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  currentBrush = brushCommand(x, y);
+  portrait.dispatchEvent(new Event("brush"));
+});
+
 drawingBoard.addEventListener("mousedown", (e) => {
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
-  currentStroke = drawCommand(x, y, drawing.lineWidth);
-  redraw();
+  currentStroke = drawCommand(x, y, strokeThickness);
+  portrait.dispatchEvent(new Event("draw"));
 });
 
 drawingBoard.addEventListener("mousemove", (e) => {
-  if (!currentStroke) return;
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
+  currentBrush = brushCommand(x, y);
+  portrait.dispatchEvent(new Event("brush"));
+  if (!currentStroke) return;
   currentStroke!.drag(x, y);
-  redraw();
+  portrait.dispatchEvent(new Event("draw"));
 });
 drawingBoard.addEventListener("mouseup", (_e) => {
   if (currentStroke) {
     strokes.push(currentStroke);
     currentStroke = null;
-    redraw();
+    portrait.dispatchEvent(new Event("draw"));
   }
 });
 
@@ -110,7 +150,7 @@ document.body.append(redoButton);
 function undo() {
   if (strokes.length > 0) {
     redoStrokes.push(strokes.pop()!);
-    redraw();
+    portrait.dispatchEvent(new Event("draw"));
   }
 }
 
@@ -118,7 +158,7 @@ function undo() {
 function redo() {
   if (redoStrokes.length > 0) {
     strokes.push(redoStrokes.pop()!);
-    redraw();
+    portrait.dispatchEvent(new Event("draw"));
   }
 }
 
@@ -142,15 +182,17 @@ thickButton.innerHTML = "Thick";
 document.body.append(thickButton);
 
 //thickness button functionality
+thinButton.classList.add("selectedTool");
+thinButton.disabled = true;
 thinButton.addEventListener("click", () => {
-  drawing.lineWidth = 1;
+  strokeThickness = 1;
   thinButton.classList.add("selectedTool");
   thinButton.disabled = true;
   thickButton.classList.remove("selectedTool");
   thickButton.disabled = false;
 });
 thickButton.addEventListener("click", () => {
-  drawing.lineWidth = 5;
+  strokeThickness = 5;
   thickButton.classList.add("selectedTool");
   thickButton.disabled = true;
   thinButton.classList.remove("selectedTool");
