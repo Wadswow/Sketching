@@ -58,13 +58,35 @@ function drawCommand(
   };
 }
 
+function stickerCommand(x: number, y: number): command {
+  const button: HTMLButtonElement | void = buttonDetect();
+  const buttonText = button!.innerHTML;
+  return {
+    display(ctx) {
+      ctx.font = "25px monospace";
+      ctx.fillText(buttonText, x - 17, y + 10);
+    },
+    drag(moveX: number, moveY: number) {
+      x = moveX;
+      y = moveY;
+    },
+  };
+}
+
 function brushCommand(cursorX: number, cursorY: number) {
   return {
     draw(ctx: CanvasRenderingContext2D) {
-      ctx.beginPath();
-      ctx.lineWidth = strokeThickness;
-      ctx.arc(cursorX, cursorY, 1, 0, 2 * Math.PI);
-      ctx.stroke();
+      const button: HTMLButtonElement | void = buttonDetect();
+      const buttonText = button!.innerHTML;
+      if (button! == thinButton || button! == thickButton) {
+        ctx.beginPath();
+        ctx.lineWidth = strokeThickness;
+        ctx.arc(cursorX, cursorY, 1, 0, 2 * Math.PI);
+        ctx.stroke();
+      } else {
+        ctx.font = "25px monospace";
+        ctx.fillText(buttonText, cursorX - 17, cursorY + 10);
+      }
     },
   };
 }
@@ -104,7 +126,11 @@ drawingBoard.addEventListener("mouseenter", (e) => {
 drawingBoard.addEventListener("mousedown", (e) => {
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
-  currentStroke = drawCommand(x, y, strokeThickness);
+  if (buttonDetect() == thinButton || buttonDetect() == thickButton) {
+    currentStroke = drawCommand(x, y, strokeThickness);
+  } else {
+    currentStroke = stickerCommand(x, y);
+  }
   portrait.dispatchEvent(new Event("draw"));
 });
 
@@ -186,15 +212,49 @@ thinButton.classList.add("selectedTool");
 thinButton.disabled = true;
 thinButton.addEventListener("click", () => {
   strokeThickness = 1;
-  thinButton.classList.add("selectedTool");
-  thinButton.disabled = true;
-  thickButton.classList.remove("selectedTool");
-  thickButton.disabled = false;
+  buttonPressed(thinButton);
 });
 thickButton.addEventListener("click", () => {
   strokeThickness = 5;
-  thickButton.classList.add("selectedTool");
-  thickButton.disabled = true;
-  thinButton.classList.remove("selectedTool");
-  thinButton.disabled = false;
+  buttonPressed(thickButton);
 });
+
+document.body.append(document.createElement("br"));
+
+//emoji skicker buttons
+const smileButton = document.createElement("button");
+smileButton.innerHTML = "😄";
+document.body.append(smileButton);
+const dogButton = document.createElement("button");
+dogButton.innerHTML = "🐕";
+document.body.append(dogButton);
+const moneyButton = document.createElement("button");
+moneyButton.innerHTML = "💰";
+document.body.append(moneyButton);
+
+//emoji sticker functionality
+smileButton.addEventListener("click", () => {
+  portrait.dispatchEvent(new Event("brush"));
+  buttonPressed(smileButton);
+});
+dogButton.addEventListener("click", () => {
+  portrait.dispatchEvent(new Event("brush"));
+  buttonPressed(dogButton);
+});
+moneyButton.addEventListener("click", () => {
+  portrait.dispatchEvent(new Event("brush"));
+  buttonPressed(moneyButton);
+});
+
+const buttons = [thinButton, thickButton, smileButton, dogButton, moneyButton];
+function buttonPressed(button: HTMLButtonElement) {
+  buttons.forEach((e) => {
+    e.classList.remove("selectedTool");
+    e.disabled = false;
+  });
+  button.classList.add("selectedTool");
+  button.disabled = true;
+}
+function buttonDetect() {
+  return buttons.find((e) => e.classList.contains("selectedTool"));
+}
