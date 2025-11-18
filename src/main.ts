@@ -143,6 +143,7 @@ drawingBoard.addEventListener("mousemove", (e) => {
   currentStroke!.drag(x, y);
   portrait.dispatchEvent(new Event("draw"));
 });
+
 drawingBoard.addEventListener("mouseup", (_e) => {
   if (currentStroke) {
     strokes.push(currentStroke);
@@ -221,32 +222,25 @@ thickButton.addEventListener("click", () => {
 
 document.body.append(document.createElement("br"));
 
-//emoji skicker buttons
-const smileButton = document.createElement("button");
-smileButton.innerHTML = "😄";
-document.body.append(smileButton);
-const dogButton = document.createElement("button");
-dogButton.innerHTML = "🐕";
-document.body.append(dogButton);
-const moneyButton = document.createElement("button");
-moneyButton.innerHTML = "💰";
-document.body.append(moneyButton);
+//sticker buttons
+const stickers = [
+  { emoji: "😄" },
+  { emoji: "🐕" },
+  { emoji: "💰" },
+];
+const buttons = [thinButton, thickButton];
 
-//emoji sticker functionality
-smileButton.addEventListener("click", () => {
-  portrait.dispatchEvent(new Event("brush"));
-  buttonPressed(smileButton);
-});
-dogButton.addEventListener("click", () => {
-  portrait.dispatchEvent(new Event("brush"));
-  buttonPressed(dogButton);
-});
-moneyButton.addEventListener("click", () => {
-  portrait.dispatchEvent(new Event("brush"));
-  buttonPressed(moneyButton);
+stickers.forEach((sticker) => {
+  const button = document.createElement("button");
+  button.innerHTML = sticker.emoji;
+  document.body.append(button);
+  buttons.push(button);
+  button.addEventListener("click", () => {
+    portrait.dispatchEvent(new Event("brush"));
+    buttonPressed(button);
+  });
 });
 
-const buttons = [thinButton, thickButton, smileButton, dogButton, moneyButton];
 function buttonPressed(button: HTMLButtonElement) {
   buttons.forEach((e) => {
     e.classList.remove("selectedTool");
@@ -258,3 +252,21 @@ function buttonPressed(button: HTMLButtonElement) {
 function buttonDetect() {
   return buttons.find((e) => e.classList.contains("selectedTool"));
 }
+
+const customStickerButton = document.createElement("button");
+customStickerButton.innerHTML = "+";
+document.body.append(customStickerButton);
+
+customStickerButton.addEventListener("click", () => {
+  const userInput = prompt("Custom Sticker Here", "🧽");
+  if (!userInput) return;
+  stickers.push({ emoji: userInput! });
+  const button = document.createElement("button");
+  button.innerHTML = userInput!;
+  document.body.insertBefore(button, customStickerButton);
+  buttons.push(button);
+  button.addEventListener("click", () => {
+    portrait.dispatchEvent(new Event("brush"));
+    buttonPressed(button);
+  });
+});
