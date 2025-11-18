@@ -270,3 +270,24 @@ customStickerButton.addEventListener("click", () => {
     buttonPressed(button);
   });
 });
+
+document.body.append(document.createElement("br"));
+
+const exportButton = document.createElement("button");
+exportButton.innerHTML = "Export";
+document.body.append(exportButton);
+
+exportButton.addEventListener("click", () => {
+  const downloadBoard = document.createElement("canvas");
+  downloadBoard.width = 1024;
+  downloadBoard.height = 1024;
+  const downloadDrawing = downloadBoard.getContext("2d")!;
+  downloadDrawing.scale(4, 4);
+  for (const cmd of strokes) {
+    cmd.display(downloadDrawing);
+  }
+  const downloadPicture = document.createElement("a");
+  downloadPicture.href = downloadBoard.toDataURL();
+  downloadPicture.download = "sketch.png";
+  downloadPicture.click();
+});
