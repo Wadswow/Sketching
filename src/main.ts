@@ -18,6 +18,8 @@ const redoStrokes: command[] = [];
 let currentStroke: command | null = null;
 let currentBrush: brush | null = null;
 let strokeThickness = 2;
+let strokeColor = "#000000";
+let stickerRotation = 0;
 
 //interfaces for drawing
 interface pen {
@@ -39,6 +41,7 @@ function drawCommand(
   firstX: number,
   firstY: number,
   thickness: number,
+  color: string,
 ): command {
   const points: pen[] = [{ x: firstX, y: firstY }];
 
@@ -50,6 +53,7 @@ function drawCommand(
         ctx.lineTo(points[i].x, points[i].y);
       }
       ctx.lineWidth = thickness;
+      ctx.strokeStyle = color;
       ctx.stroke();
     },
     drag(x: number, y: number) {
@@ -61,10 +65,17 @@ function drawCommand(
 function stickerCommand(x: number, y: number): command {
   const button: HTMLButtonElement | void = buttonDetect();
   const buttonText = button!.innerHTML;
+  const rotation = stickerRotation;
   return {
     display(ctx) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate((rotation * Math.PI) / 180);
       ctx.font = "25px monospace";
-      ctx.fillText(buttonText, x - 17, y + 10);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(buttonText, 0, 0);
+      ctx.restore();
     },
     drag(moveX: number, moveY: number) {
       x = moveX;
@@ -83,11 +94,18 @@ function brushCommand(cursorX: number, cursorY: number) {
       if (button! == thinButton || button! == thickButton) {
         ctx.beginPath();
         ctx.lineWidth = strokeThickness;
+        ctx.strokeStyle = strokeColor;
         ctx.arc(cursorX, cursorY, 1, 0, 2 * Math.PI);
         ctx.stroke();
       } else {
+        ctx.save();
+        ctx.translate(cursorX, cursorY);
+        ctx.rotate((stickerRotation * Math.PI) / 180); // preview uses current rotation
         ctx.font = "25px monospace";
-        ctx.fillText(buttonText, cursorX - 17, cursorY + 10);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(buttonText, 0, 0);
+        ctx.restore();
       }
       ctx.restore();
     },
@@ -130,7 +148,7 @@ drawingBoard.addEventListener("mousedown", (e) => {
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
   if (buttonDetect() == thinButton || buttonDetect() == thickButton) {
-    currentStroke = drawCommand(x, y, strokeThickness);
+    currentStroke = drawCommand(x, y, strokeThickness, strokeColor);
   } else {
     currentStroke = stickerCommand(x, y);
   }
@@ -213,13 +231,14 @@ document.body.append(thickButton);
 
 //thickness button functionality
 thinButton.classList.add("selectedTool");
-thinButton.disabled = true;
 thinButton.addEventListener("click", () => {
   strokeThickness = 2;
+  strokeColor = getRandomHexColor();
   buttonPressed(thinButton);
 });
 thickButton.addEventListener("click", () => {
   strokeThickness = 8;
+  strokeColor = getRandomHexColor();
   buttonPressed(thickButton);
 });
 
@@ -239,23 +258,25 @@ stickers.forEach((sticker) => {
   document.body.append(button);
   buttons.push(button);
   button.addEventListener("click", () => {
+    stickerRotation = Math.floor(Math.random() * (360 - 0 + 1));
     portrait.dispatchEvent(new Event("brush"));
     buttonPressed(button);
   });
 });
 
+//button helper functions
 function buttonPressed(button: HTMLButtonElement) {
   buttons.forEach((e) => {
     e.classList.remove("selectedTool");
-    e.disabled = false;
   });
   button.classList.add("selectedTool");
-  button.disabled = true;
 }
+
 function buttonDetect() {
   return buttons.find((e) => e.classList.contains("selectedTool"));
 }
 
+//custom sticker button
 const customStickerButton = document.createElement("button");
 customStickerButton.innerHTML = "+";
 document.body.append(customStickerButton);
@@ -276,6 +297,7 @@ customStickerButton.addEventListener("click", () => {
 
 document.body.append(document.createElement("br"));
 
+//export button
 const exportButton = document.createElement("button");
 exportButton.innerHTML = "Export";
 document.body.append(exportButton);
@@ -294,3 +316,9 @@ exportButton.addEventListener("click", () => {
   downloadPicture.download = "sketch.png";
   downloadPicture.click();
 });
+
+//helper functions
+function getRandomHexColor() {
+  const randomColor = Math.floor(Math.random() * 16777215).toString(16);
+  return "#" + ("000000" + randomColor).slice(-6);
+}
