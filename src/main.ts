@@ -17,7 +17,7 @@ const strokes: command[] = [];
 const redoStrokes: command[] = [];
 let currentStroke: command | null = null;
 let currentBrush: brush | null = null;
-let strokeThickness = 1;
+let strokeThickness = 2;
 
 //interfaces for drawing
 interface pen {
@@ -78,6 +78,8 @@ function brushCommand(cursorX: number, cursorY: number) {
     draw(ctx: CanvasRenderingContext2D) {
       const button: HTMLButtonElement | void = buttonDetect();
       const buttonText = button!.innerHTML;
+      ctx.save();
+      ctx.globalAlpha = 0.75;
       if (button! == thinButton || button! == thickButton) {
         ctx.beginPath();
         ctx.lineWidth = strokeThickness;
@@ -87,6 +89,7 @@ function brushCommand(cursorX: number, cursorY: number) {
         ctx.font = "25px monospace";
         ctx.fillText(buttonText, cursorX - 17, cursorY + 10);
       }
+      ctx.restore();
     },
   };
 }
@@ -212,11 +215,11 @@ document.body.append(thickButton);
 thinButton.classList.add("selectedTool");
 thinButton.disabled = true;
 thinButton.addEventListener("click", () => {
-  strokeThickness = 1;
+  strokeThickness = 2;
   buttonPressed(thinButton);
 });
 thickButton.addEventListener("click", () => {
-  strokeThickness = 5;
+  strokeThickness = 8;
   buttonPressed(thickButton);
 });
 

@@ -1,10 +1,11 @@
-.icon {
-  width: 64px;
-  vertical-align: top;
-  border: 1px solid salmon;
+h1 {
+  font-family: brush script mt, cursive;
+  font-size: 64px;
+  color: rgb(0, 0, 0);
 }
 
 canvas {
+  background-color: white;
   border: thin solid black;
   border-radius: 15px;
   filter: drop-shadow(2px 2px 2px black);
@@ -12,4 +13,20 @@ canvas {
 
 .selectedTool {
   background-color: lightgrey;
+}
+
+button {
+  font-size: 24px;
+  margin: 5px;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+button:hover {
+  background-color: #d3d3d3;
+  cursor: pointer;
+}
+
+body {
+  background-color: #3d8cd1;
 }
