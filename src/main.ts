@@ -100,7 +100,7 @@ function brushCommand(cursorX: number, cursorY: number) {
       } else {
         ctx.save();
         ctx.translate(cursorX, cursorY);
-        ctx.rotate((stickerRotation * Math.PI) / 180); // preview uses current rotation
+        ctx.rotate((stickerRotation * Math.PI) / 180);
         ctx.font = "25px monospace";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -249,6 +249,7 @@ const stickers = [
   { emoji: "😄" },
   { emoji: "🐕" },
   { emoji: "💰" },
+  { emoji: "✋" },
 ];
 const buttons = [thinButton, thickButton];
 
